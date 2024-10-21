@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Slider } from "@/components/ui/slider"
 
 function Clock() {
   const [time, setTime] = useState(new Date())
@@ -62,24 +63,55 @@ function Clock() {
   )
 }
 
+const DEFAULT_PROMPT = `You are a helpful assistant. Generate a meeting minute summary but capture most of the content and expand on topics as needed. Do not use markdown or ** in the output. If there are abbreviations like AS, PS, HW, etc., leave them as is without changes.`
+
+const DEFAULT_TEMPLATE = `Meeting Minutes Summary [ENTER TITLE]
+
+• Date: [Enter Date]
+• Attendees:
+  • [Name 1]
+  • [Name 2]
+  • [Name 3]
+• Agenda:
+  1. [Agenda Item 1]
+  2. [Agenda Item 2]
+  3. [Agenda Item 3]
+• Discussion Points:
+  • [Key Point 1]
+  • [Key Point 2]
+  • [Key Point 3]
+• Action Items:
+  • [Action Item 1] - [Responsible Person] - [Due Date]
+  • [Action Item 2] - [Responsible Person] - [Due Date]
+• Next Meeting:
+  • [Date and Time]
+• Summary of Meeting:
+`
+
 function Header({ 
   onTemplatesChange, 
   onSavedNotesChange, 
   onAIServicesChange,
   onInstructionsChange,
+  onSettingsChange,
   isTemplatesChecked,
   isSavedNotesChecked,
   isAIServicesChecked,
-  isInstructionsOpen
+  isSettingsChecked,
+  isInstructionsOpen,
+  isSettingsOpen,
 }: { 
   onTemplatesChange: (checked: boolean) => void,
   onSavedNotesChange: (checked: boolean) => void,
   onAIServicesChange: (checked: boolean) => void,
   onInstructionsChange: (open: boolean) => void,
+  onSettingsChange: (checked: boolean) => void,
   isTemplatesChecked: boolean,
   isSavedNotesChecked: boolean,
   isAIServicesChecked: boolean,
-  isInstructionsOpen: boolean
+  isSettingsChecked: boolean,
+  isInstructionsOpen: boolean,
+  isSettingsOpen: boolean,
 }) {
   return (
     <header className="border-b border-gray-200 py-4">
@@ -115,6 +147,10 @@ function Header({
             <label className="flex items-center space-x-2">
               <Checkbox id="templates" checked={isTemplatesChecked} onCheckedChange={onTemplatesChange} />
               <span className="text-sm font-medium text-gray-700">TEMPLATES</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <Checkbox id="settings" checked={isSettingsChecked} onCheckedChange={onSettingsChange} />
+              <span className="text-sm font-medium text-gray-700">SETTINGS</span>
             </label>
           </div>
         </div>
@@ -185,7 +221,9 @@ export function NoteTakingAppComponent() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
-  const [templates, setTemplates] = useState<{ id: number; name: string; content: string }[]>([])
+  const [templates, setTemplates] = useState<{ id: number; name: string; content: string }[]>([
+    { id: 0, name: "Default", content: DEFAULT_TEMPLATE }
+  ])
   const [newTemplate, setNewTemplate] = useState({ name: "", content: "" })
   const [editingTemplate, setEditingTemplate] = useState<number | null>(null)
   const [isSavedNotesOpen, setIsSavedNotesOpen] = useState(false)
@@ -204,6 +242,12 @@ export function NoteTakingAppComponent() {
   const [isLoading, setIsLoading] = useState(false)
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isSettingsChecked, setIsSettingsChecked] = useState(false)
+  const [llmPrompt, setLlmPrompt] = useState(DEFAULT_PROMPT)
+  const [llmTemperature, setLlmTemperature] = useState(0.7)
+  const [selectedTemplateId, setSelectedTemplateId] = useState("0")
+  const [selectedTemplateContent, setSelectedTemplateContent] = useState(DEFAULT_TEMPLATE)
 
   const generateSummary = () => {
     setIsGenerating(true)
@@ -304,7 +348,8 @@ export function NoteTakingAppComponent() {
           description: "Your template has been updated successfully.",
         })
       } else {
-        setTemplates([...templates, { id: Date.now(), ...newTemplate }])
+        const newId = Math.max(...templates.map(t => t.id)) + 1
+        setTemplates([...templates, { id: newId, ...newTemplate }])
         toast({
           title: "Template saved",
           description: "Your new template has been saved successfully.",
@@ -394,6 +439,27 @@ export function NoteTakingAppComponent() {
     })
   }
 
+  const handleSettingsChange = (checked: boolean) => {
+    setIsSettingsChecked(checked);
+    setIsSettingsOpen(checked);
+  };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLlmPrompt(e.target.value)
+  }
+
+  const handleTemperatureChange = (value: number[]) => {
+    setLlmTemperature(value[0])
+  }
+
+  const handleSaveSettings = () => {
+    toast({
+      title: "Settings saved",
+      description: "Your LLM settings have been updated.",
+    })
+    setIsSettingsOpen(false)
+  }
+
   const handleSummarize = async () => {
     if (!note) {
       toast({
@@ -412,12 +478,13 @@ export function NoteTakingAppComponent() {
       const model = new Ollama({
         baseUrl: "http://localhost:11434",
         model: "llama3.2",
+        temperature: llmTemperature,
+        // @ts-ignore
         streaming: true,
       })
 
-      const prompt = PromptTemplate.fromTemplate(
-        "Summarize the following text:\n\n{text}\n\nSummary:"
-      )
+      const combinedPrompt = `${llmPrompt}\n\nUse the following template for the summary:\n\n${selectedTemplateContent}\n\nInput text:\n${note}`
+      const prompt = PromptTemplate.fromTemplate(combinedPrompt)
 
       const chain = prompt.pipe(model)
 
@@ -454,6 +521,14 @@ export function NoteTakingAppComponent() {
     setIsConfirmDialogOpen(false)
   }
 
+  const handleTemplateChange = (value: string) => {
+    setSelectedTemplateId(value)
+    const template = templates.find(t => t.id.toString() === value)
+    if (template) {
+      setSelectedTemplateContent(template.content)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
@@ -461,10 +536,13 @@ export function NoteTakingAppComponent() {
         onSavedNotesChange={handleSavedNotesChange}
         onAIServicesChange={handleAIServicesChange}
         onInstructionsChange={handleInstructionsChange}
+        onSettingsChange={handleSettingsChange}
         isTemplatesChecked={isTemplatesChecked}
         isSavedNotesChecked={isSavedNotesChecked}
         isAIServicesChecked={isAIServicesChecked}
+        isSettingsChecked={isSettingsChecked}
         isInstructionsOpen={isInstructionsOpen}
+        isSettingsOpen={isSettingsOpen}
       />
       <main className="mx-auto max-w-3xl p-8">
         <h1 className="mb-8 text-4xl font-bold tracking-tight text-gray-900">
@@ -478,9 +556,23 @@ export function NoteTakingAppComponent() {
             onChange={(e) => setNote(e.target.value)}
           />
           <div className="flex flex-col items-end space-y-2">
-            <Button onClick={handleSummarize} variant="outline" size="sm" disabled={isStreaming}>
-              {isStreaming ? "Summarizing..." : "Summarize"}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id.toString()}>
+                      {template.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleSummarize} variant="outline" size="sm" disabled={isStreaming}>
+                {isStreaming ? "Summarizing..." : "Summarize"}
+              </Button>
+            </div>
             <p className="text-sm text-gray-600 italic">
               *Not private when using external services, as meeting notes are transmitted to these services for summarization.
             </p>
@@ -622,9 +714,11 @@ export function NoteTakingAppComponent() {
                     <Button variant="ghost" size="sm" onClick={() => handleEditTemplate(template.id)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteTemplate(template.id)}>
-                      <Trash className="h-4 w-4" />
-                    </Button>
+                    {template.name !== "Default" && (
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTemplate(template.id)}>
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -771,6 +865,49 @@ export function NoteTakingAppComponent() {
               ))}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog 
+        open={isSettingsOpen} 
+        onOpenChange={handleSettingsChange}
+      >
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>LLM Settings</DialogTitle>
+            <DialogDescription>
+              Configure the prompt and temperature for the LLM.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="llm-prompt" className="text-sm font-medium">Prompt Template</label>
+              <Textarea
+                id="llm-prompt"
+                value={llmPrompt}
+                onChange={handlePromptChange}
+                className="min-h-[100px]"
+                placeholder="Enter your prompt template here."
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="llm-temperature" className="text-sm font-medium">Temperature: {llmTemperature}</label>
+              <Slider
+                id="llm-temperature"
+                min={0}
+                max={1}
+                step={0.1}
+                value={[llmTemperature]}
+                onValueChange={handleTemperatureChange}
+              />
+              <p className="text-xs text-gray-500">
+                Adjust the creativity of the LLM output. Lower values produce more focused and deterministic outputs, while higher values introduce more randomness and creativity.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveSettings}>Save Settings</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

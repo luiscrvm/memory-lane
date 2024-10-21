@@ -1,36 +1,70 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Official GitHub reference for ignoring files:
+# https://help.github.com/articles/ignoring-files/
 
-# dependencies
+# Node.js dependencies and package managers
 /node_modules
 /.pnp
 .pnp.js
-.yarn/install-state.gz
+.yarn/*
+!/.yarn/patches # Keep patches if used
+!/.yarn/plugins # Keep custom Yarn plugins
+!/.yarn/releases # Keep Yarn releases
+!/.yarn/sdks # Keep SDKs if you're using them
+!/.yarn/versions # Keep Yarn version files
 
-# testing
-/coverage
-
-# next.js
+# Next.js build output
 /.next/
 /out/
 
-# production
+# Production build output
 /build
 
-# misc
+# Logs (npm, Yarn, and others)
+/npm-debug.log*
+/yarn-debug.log*
+/yarn-error.log*
+/logs
+*.log
+
+# Coverage reports from testing
+/coverage
+
+# OS-specific files
 .DS_Store
+Thumbs.db
+
+# SSL certificates and keys
 *.pem
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Local environment variables
+.env
+.env.*     # Exclude all .env files (use .env.example for defaults)
+!.env.example # Keep .env.example to specify required env vars
 
-# local env files
-.env*.local
+# Editor/IDE settings
+.vscode/*
+.idea/*
 
-# vercel
-.vercel
+# macOS/Linux-specific files
+.AppleDouble
+.LSOverride
 
-# typescript
+# Typescript build artifacts
 *.tsbuildinfo
 next-env.d.ts
+
+# Miscellaneous temporary files
+*.swp
+*.swo
+*.bak
+
+# Vercel deployment
+.vercel
+
+# Optional: include rules to ensure proper commit structure
+.gitlab-ci.yml
+docker-compose.yml
+
+# Ignore lockfiles to avoid conflicts across dev environments
+package-lock.json
+yarn.lock
