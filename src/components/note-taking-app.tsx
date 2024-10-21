@@ -1,0 +1,780 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Bold, Italic, List, Undo, Redo, Copy, Check, Plus, Edit, Trash, Save, Settings, X, Linkedin } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { toast } from "@/components/ui/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Ollama } from "@langchain/community/llms/ollama"
+import { PromptTemplate } from "@langchain/core/prompts"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
+function Clock() {
+  const [time, setTime] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatTime = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    const seconds = date.getSeconds().toString().padStart(2, '0')
+    const timezone = date.toLocaleTimeString('en-us', { timeZoneName: 'short' }).split(' ')[2]
+    return `${hours}:${minutes}:${seconds} (${timezone})`
+  }
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  }
+
+  return (
+    <div className="text-center">
+      <div className="font-mono text-lg">
+        {formatTime(time)}
+      </div>
+      <div className="font-mono text-sm text-gray-500">
+        {formatDate(time)}
+      </div>
+    </div>
+  )
+}
+
+function Header({ 
+  onTemplatesChange, 
+  onSavedNotesChange, 
+  onAIServicesChange,
+  onInstructionsChange,
+  isTemplatesChecked,
+  isSavedNotesChecked,
+  isAIServicesChecked,
+  isInstructionsOpen
+}: { 
+  onTemplatesChange: (checked: boolean) => void,
+  onSavedNotesChange: (checked: boolean) => void,
+  onAIServicesChange: (checked: boolean) => void,
+  onInstructionsChange: (open: boolean) => void,
+  isTemplatesChecked: boolean,
+  isSavedNotesChecked: boolean,
+  isAIServicesChecked: boolean,
+  isInstructionsOpen: boolean
+}) {
+  return (
+    <header className="border-b border-gray-200 py-4">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="flex items-center justify-between">
+          <nav className="space-x-4">
+            <button 
+              onClick={() => onInstructionsChange(!isInstructionsOpen)}
+              className="text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              INSTRUCTIONS
+            </button>
+            <a 
+              href="https://www.linkedin.com/in/luisvillalobosmolina" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center space-x-1"
+            >
+              <span>Composer {'->'} </span>
+              <Linkedin className="h-4 w-4" />
+            </a>
+          </nav>
+          <Clock />
+          <div className="flex items-center space-x-4">
+            <label className="flex items-center space-x-2">
+              <Checkbox id="saved-notes" checked={isSavedNotesChecked} onCheckedChange={onSavedNotesChange} />
+              <span className="text-sm font-medium text-gray-700">SAVED NOTES</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <Checkbox id="ai-services" checked={isAIServicesChecked} onCheckedChange={onAIServicesChange} />
+              <span className="text-sm font-medium text-gray-700">AI SERVICES</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <Checkbox id="templates" checked={isTemplatesChecked} onCheckedChange={onTemplatesChange} />
+              <span className="text-sm font-medium text-gray-700">TEMPLATES</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function InstructionsPopup({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <Card className="w-[500px] max-w-[90vw] max-h-[500px] overflow-y-auto font-mono">
+        <CardHeader>
+          <CardTitle className="text-base">Setup Instructions</CardTitle>
+          <CardDescription className="text-xs">Follow these steps to set up Ollama and OpenAI</CardDescription>
+        </CardHeader>
+        <CardContent className="font-mono text-sm">
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2 text-sm">1. Install Ollama (Locally)</h3>
+              <ol className="list-decimal list-inside space-y-2 text-xs">
+                <li><strong>Download:</strong> Go to ollama.com/download and download the installer for your operating system.</li>
+                <li><strong>Install:</strong> Run the installer and follow the prompts to complete the installation.</li>
+                <li><strong>Launch:</strong> Open Ollama from your Applications folder or via the command line using ollama.</li>
+                <li><strong>Download a Model:</strong> Open a Terminal (on macOS) or Command Prompt (on Windows), and run the following command to download a model:
+                  <pre className="bg-gray-100 p-2 mt-1 rounded text-xs overflow-x-auto">ollama pull [model name]</pre>
+                  Replace [model name] with the specific model you want to download, such as llama3.2
+                </li>
+              </ol>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2 text-sm">2. Get OpenAI API Keys</h3>
+              <ol className="list-decimal list-inside space-y-2 text-xs">
+                <li><strong>Sign Up / Log In:</strong> Go to platform.openai.com and sign in to your account (or create one if you don't have it).</li>
+                <li><strong>Access API Keys:</strong> In the dashboard, go to API Keys under the User menu.</li>
+                <li><strong>Create a New Key:</strong> Click on + New Key, name it, and copy the key displayed. Store it securely.</li>
+              </ol>
+            </div>
+          </div>
+        </CardContent>
+        <div className="p-4 flex justify-end">
+          <Button onClick={onClose} variant="outline" className="font-mono text-xs">Close</Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+interface SavedNote {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+interface AIService {
+  id: number;
+  name: string;
+  apiKey: string;
+}
+
+export function NoteTakingAppComponent() {
+  const [note, setNote] = useState("")
+  const [summary, setSummary] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
+  const [templates, setTemplates] = useState<{ id: number; name: string; content: string }[]>([])
+  const [newTemplate, setNewTemplate] = useState({ name: "", content: "" })
+  const [editingTemplate, setEditingTemplate] = useState<number | null>(null)
+  const [isSavedNotesOpen, setIsSavedNotesOpen] = useState(false)
+  const [isAIServicesOpen, setIsAIServicesOpen] = useState(false)
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false)
+  const [isTemplatesChecked, setIsTemplatesChecked] = useState(false)
+  const [isSavedNotesChecked, setIsSavedNotesChecked] = useState(false)
+  const [isAIServicesChecked, setIsAIServicesChecked] = useState(false)
+  const [savedNotes, setSavedNotes] = useState<SavedNote[]>([])
+  const [editingNote, setEditingNote] = useState<SavedNote | null>(null)
+  const [aiServices, setAIServices] = useState<AIService[]>([
+    { id: 1, name: "Ollama", apiKey: "" }
+  ])
+  const [defaultAIService, setDefaultAIService] = useState<AIService>(aiServices[0])
+  const [newAIService, setNewAIService] = useState({ name: "", apiKey: "" })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
+  const [isStreaming, setIsStreaming] = useState(false)
+
+  const generateSummary = () => {
+    setIsGenerating(true)
+    setIsModalOpen(true)
+    setSummary("")
+
+    // Simulating AI text generation with a streaming effect
+    const fullSummary = "This is a simulated AI-generated summary of your notes. It highlights key points and provides a concise overview of the main ideas discussed in the meeting. The summary aims to capture the essence of the discussion, making it easier to review and share important information from the meeting."
+    let currentIndex = 0
+
+    const streamText = () => {
+      if (currentIndex < fullSummary.length) {
+        setSummary((prev) => prev + fullSummary[currentIndex])
+        currentIndex++
+        setTimeout(streamText, 50) // Adjust the speed of "typing" here
+      } else {
+        setIsGenerating(false)
+      }
+    }
+
+    setTimeout(streamText, 1000) // Delay to simulate processing time
+  }
+
+  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNote(e.target.value)
+  }
+
+  const handleSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setSummary(e.target.value)
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(summary)
+    setIsCopied(true)
+    setTimeout(() => setIsCopied(false), 2000)
+    toast({
+      title: "Copied to clipboard",
+      description: "The summary has been copied to your clipboard.",
+    })
+  }
+
+  const handleSave = () => {
+    const newNote: SavedNote = {
+      id: Date.now(),
+      title: `Note ${savedNotes.length + 1}`,
+      content: summary,
+      createdAt: new Date().toISOString(),
+    }
+    setSavedNotes([...savedNotes, newNote])
+    setIsModalOpen(false)
+    toast({
+      title: "Summary saved",
+      description: "Your summary has been saved successfully.",
+    })
+  }
+
+  const handleTemplatesChange = (checked: boolean) => {
+    if (!checked && (newTemplate.name || newTemplate.content)) {
+      const confirmClose = window.confirm("You have unsaved changes. Are you sure you want to close?");
+      if (confirmClose) {
+        setIsTemplatesChecked(false);
+        setIsTemplatesOpen(false);
+        setNewTemplate({ name: "", content: "" });
+      }
+    } else {
+      setIsTemplatesChecked(checked);
+      setIsTemplatesOpen(checked);
+    }
+  };
+
+  const handleSavedNotesChange = (checked: boolean) => {
+    setIsSavedNotesChecked(checked);
+    setIsSavedNotesOpen(checked);
+  };
+
+  const handleAIServicesChange = (checked: boolean) => {
+    setIsAIServicesChecked(checked);
+    setIsAIServicesOpen(checked);
+  };
+
+  const handleInstructionsChange = (open: boolean) => {
+    setIsInstructionsOpen(open);
+  };
+
+  const handleNewTemplateChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setNewTemplate({ ...newTemplate, [e.target.name]: e.target.value })
+  }
+
+  const handleSaveTemplate = () => {
+    if (newTemplate.name && newTemplate.content) {
+      if (editingTemplate !== null) {
+        setTemplates(templates.map(t => 
+          t.id === editingTemplate ? { ...t, ...newTemplate } : t
+        ))
+        setEditingTemplate(null)
+        toast({
+          title: "Template updated",
+          description: "Your template has been updated successfully.",
+        })
+      } else {
+        setTemplates([...templates, { id: Date.now(), ...newTemplate }])
+        toast({
+          title: "Template saved",
+          description: "Your new template has been saved successfully.",
+        })
+      }
+      setNewTemplate({ name: "", content: "" })
+    }
+  }
+
+  const handleEditTemplate = (id: number) => {
+    const template = templates.find(t => t.id === id)
+    if (template) {
+      setNewTemplate({ name: template.name, content: template.content })
+      setEditingTemplate(id)
+    }
+  }
+
+  const handleDeleteTemplate = (id: number) => {
+    setTemplates(templates.filter(t => t.id !== id))
+    toast({
+      title: "Template deleted",
+      description: "Your template has been deleted successfully.",
+    })
+  }
+
+  const handleEditNote = (note: SavedNote) => {
+    setEditingNote(note)
+  }
+
+  const handleSaveEditedNote = () => {
+    if (editingNote) {
+      setSavedNotes(savedNotes.map(note => 
+        note.id === editingNote.id ? editingNote : note
+      ))
+      setEditingNote(null)
+      toast({
+        title: "Note updated",
+        description: "Your note has been updated successfully.",
+      })
+    }
+  }
+
+  const handleDeleteNote = (id: number) => {
+    setSavedNotes(savedNotes.filter(note => note.id !== id))
+    toast({
+      title: "Note deleted",
+      description: "Your note has been deleted successfully.",
+    })
+  }
+
+  const handleNewAIServiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewAIService({ ...newAIService, [e.target.name]: e.target.value })
+  }
+
+  const handleSaveAIService = () => {
+    if (newAIService.name && newAIService.apiKey) {
+      const  newService = { id: Date.now(), ...newAIService }
+      setAIServices([...aiServices, newService])
+      setNewAIService({ name: "", apiKey: "" })
+      toast({
+        title: "AI Service added",
+        
+        description: "Your new AI service has been added successfully.",
+      })
+    }
+  }
+
+  const handleSetDefaultAIService = (id: number) => {
+    const service = aiServices.find(s => s.id === id)
+    if (service) {
+      setDefaultAIService(service)
+      toast({
+        title: "Default AI Service updated",
+        description: `${service.name} is now set as the default AI service.`,
+      })
+    }
+  }
+
+  const handleDeleteAIService = (id: number) => {
+    setAIServices(aiServices.filter(s => s.id !== id))
+    if (defaultAIService.id === id) {
+      setDefaultAIService(aiServices[0])
+    }
+    toast({
+      title: "AI Service deleted",
+      description: "The AI service has been deleted successfully.",
+    })
+  }
+
+  const handleSummarize = async () => {
+    if (!note) {
+      toast({
+        title: "Error",
+        description: "Please enter some content to summarize.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsStreaming(true)
+    setIsModalOpen(true)
+    setSummary("")
+
+    try {
+      const model = new Ollama({
+        baseUrl: "http://localhost:11434",
+        model: "llama3.2",
+        streaming: true,
+      })
+
+      const prompt = PromptTemplate.fromTemplate(
+        "Summarize the following text:\n\n{text}\n\nSummary:"
+      )
+
+      const chain = prompt.pipe(model)
+
+      const stream = await chain.stream({
+        text: note,
+      })
+
+      for await (const chunk of stream) {
+        setSummary((prev) => prev + chunk)
+      }
+    } catch (error) {
+      console.error("Error summarizing content:", error)
+      toast({
+        title: "Error",
+        description: "An error occurred while summarizing the content. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsStreaming(false)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setIsConfirmDialogOpen(true)
+  }
+
+  const handleConfirmClose = () => {
+    setIsConfirmDialogOpen(false)
+    setIsModalOpen(false)
+    setSummary("")
+  }
+
+  const handleCancelClose = () => {
+    setIsConfirmDialogOpen(false)
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Header 
+        onTemplatesChange={handleTemplatesChange}
+        onSavedNotesChange={handleSavedNotesChange}
+        onAIServicesChange={handleAIServicesChange}
+        onInstructionsChange={handleInstructionsChange}
+        isTemplatesChecked={isTemplatesChecked}
+        isSavedNotesChecked={isSavedNotesChecked}
+        isAIServicesChecked={isAIServicesChecked}
+        isInstructionsOpen={isInstructionsOpen}
+      />
+      <main className="mx-auto max-w-3xl p-8">
+        <h1 className="mb-8 text-4xl font-bold tracking-tight text-gray-900">
+          <span className="bg-yellow-200 px-1">PRIVATE</span>. MEETING NOTES
+        </h1>
+        <div className="space-y-6">
+          <Textarea
+            placeholder="Type your note here..."
+            className="min-h-[200px] w-full resize-none rounded-none border-x-0 border-t-0 border-b border-gray-300 p-2 focus:border-gray-400 focus:outline-none focus:ring-0"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <div className="flex flex-col items-end space-y-2">
+            <Button onClick={handleSummarize} variant="outline" size="sm" disabled={isStreaming}>
+              {isStreaming ? "Summarizing..." : "Summarize"}
+            </Button>
+            <p className="text-sm text-gray-600 italic">
+              *Not private when using external services, as meeting notes are transmitted to these services for summarization.
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>AI-Generated Summary</DialogTitle>
+            <DialogDescription>
+              {isStreaming ? "Generating summary..." : "Here's a concise summary of your meeting notes. You can edit it below."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-end">
+              <Button
+                onClick={handleCopy}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-1"
+                disabled={isStreaming}
+              >
+                {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                <span>{isCopied ? "Copied" : "Copy"}</span>
+              </Button>
+            </div>
+            <Textarea
+              value={summary}
+              onChange={handleSummaryChange}
+              className="min-h-[200px] w-full resize-none rounded-md border border-gray-300 p-2 focus:border-gray-400 focus:outline-none focus:ring-0"
+              readOnly={isStreaming}
+            />
+          </div>
+          {isStreaming && (
+            <div className="mt-2 flex items-center justify-center">
+              <div className="h-4 w-4 animate-spin rounded-full border-t-2 border-gray-500"></div>
+            </div>
+          )}
+          <div className="mt-4 flex space-x-2">
+            <Button variant="ghost" size="sm">
+              <Bold className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Italic className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <List className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Undo className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Redo className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All unsaved data will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelClose}>No, keep editing</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmClose}>Yes, cancel</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog 
+        open={isTemplatesOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            if (newTemplate.name || newTemplate.content) {
+              const confirmClose = window.confirm("You have unsaved changes. Are you sure you want to close?");
+              if (confirmClose) {
+                setIsTemplatesOpen(false);
+                setIsTemplatesChecked(false);
+                setNewTemplate({ name: "", content: ""});
+              }
+            } else {
+              setIsTemplatesOpen(false);
+              setIsTemplatesChecked(false);
+            }
+          } else {
+            setIsTemplatesOpen(true);
+            setIsTemplatesChecked(true);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Meeting Note Templates</DialogTitle>
+            <DialogDescription>
+              Create and manage your meeting note templates here.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">{editingTemplate !== null ? "Edit Template" : "New Template"}</h3>
+              <Input
+                placeholder="Template Name"
+                name="name"
+                value={newTemplate.name}
+                onChange={handleNewTemplateChange}
+              />
+              <Textarea
+                placeholder="Template Content"
+                name="content"
+                value={newTemplate.content}
+                onChange={handleNewTemplateChange}
+                className="min-h-[100px]"
+              />
+              <Button onClick={handleSaveTemplate} className="w-full">
+                <Plus className="mr-2 h-4 w-4" /> {editingTemplate !== null ? "Update Template" : "Save New Template"}
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Saved Templates</h3>
+              {templates.map((template) => (
+                <div key={template.id} className="flex items-center justify-between rounded-md border border-gray-200 p-2">
+                  <div>
+                    <h4 className="font-medium">{template.name}</h4>
+                    <p className="text-sm text-gray-500">{template.content.substring(0, 50)}...</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEditTemplate(template.id)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteTemplate(template.id)}>
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog 
+        open={isSavedNotesOpen} 
+        onOpenChange={(open) => {
+          setIsSavedNotesOpen(open);
+          setIsSavedNotesChecked(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Saved Notes</DialogTitle>
+            <DialogDescription>
+              View and edit your saved notes here.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            {editingNote ? (
+              <div className="space-y-4">
+                <Input
+                  value={editingNote.title}
+                  onChange={(e) => setEditingNote({...editingNote, title: e.target.value})}
+                  className="font-medium"
+                />
+                <Textarea
+                  value={editingNote.content}
+                  onChange={(e) => setEditingNote({...editingNote, content: e.target.value})}
+                  className="min-h-[200px]"
+                />
+                <div className="flex space-x-2">
+                  <Button variant="ghost" size="sm" onClick={() => setEditingNote(null)}>
+                    Cancel
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleSaveEditedNote}>
+                    <Save className="mr-2 h-4 w-4" /> Save Changes
+                  </Button>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="ghost" size="sm">
+                    <Bold className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Italic className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <List className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Undo className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Redo className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {savedNotes.map((note) => (
+                  <div key={note.id} className="flex items-center justify-between rounded-md border border-gray-200 p-2">
+                    <div>
+                      <h4 className="font-medium">{note.title}</h4>
+                      <p className="text-sm text-gray-500">{note.content.substring(0, 50)}...</p>
+                      <p className="text-xs text-gray-400">{new Date(note.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditNote(note)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteNote(note.id)}>
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog 
+        open={isAIServicesOpen} 
+        onOpenChange={(open) => {
+          setIsAIServicesOpen(open);
+          setIsAIServicesChecked(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>AI Services</DialogTitle>
+            <DialogDescription>
+              Manage your AI service providers here.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Add New AI Service</h3>
+              <Input
+                placeholder="Service Name"
+                name="name"
+                value={newAIService.name}
+                onChange={handleNewAIServiceChange}
+              />
+              <Input
+                placeholder="API Key"
+                name="apiKey"
+                type="password"
+                value={newAIService.apiKey}
+                onChange={handleNewAIServiceChange}
+              />
+              <Button onClick={handleSaveAIService} className="w-full">
+                <Plus className="mr-2 h-4 w-4" /> Add AI Service
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">AI Services</h3>
+              {aiServices.map((service) => (
+                <div key={service.id} className="flex items-center justify-between rounded-md border border-gray-200 p-2">
+                  <div>
+                    <h4 className="font-medium">{service.name}</h4>
+                    <p className="text-sm text-gray-500">API Key: ••••••••</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant={defaultAIService.id === service.id ? "default" : "outline"} 
+                      size="sm" 
+                      onClick={() => handleSetDefaultAIService(service.id)}
+                    >
+                      {defaultAIService.id === service.id ? "Default" : "Set as Default"}
+                    </Button>
+                    {service.name !== "Ollama" && (
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteAIService(service.id)}>
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <InstructionsPopup isOpen={isInstructionsOpen} onClose={() => setIsInstructionsOpen(false)} />
+    </div>
+  )
+}
