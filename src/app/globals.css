@@ -85,3 +85,58 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.resizeable-dialog {
+  resize: both; /* Allow resizing in both directions */
+  overflow: auto; /* Ensure content is scrollable if it exceeds the size */
+  min-width: 300px; /* Set a minimum width */
+  min-height: 200px; /* Set a minimum height */
+  max-width: 90vw; /* Set a maximum width */
+  max-height: 90vh; /* Set a maximum height */
+}
+
+/* Optional: Add a handle for resizing */
+.resize-handle {
+  width: 10px;
+  height: 10px;
+  background: #000; /* Color of the resize handle */
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize; /* Cursor style for resizing */
+}
+
+.dialog-content {
+  border: 1px solid #ccc; /* Match the border style */
+  border-radius: 8px; /* Ensure rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+}
+
+/* Button styles */
+.button {
+  background-color: #f0f0f0; /* Light background */
+  color: #000; /* Dark text */
+  border: 1px solid #ccc; /* Border */
+  border-radius: 4px; /* Rounded corners */
+  padding: 8px 16px; /* Padding */
+  transition: background-color 0.3s; /* Smooth transition */
+}
+
+.button:hover {
+  background-color: #e0e0e0; /* Darker on hover */
+}
+
+/* Textarea styles */
+.textarea {
+  border: 1px solid #ccc; /* Match the border style */
+  border-radius: 4px; /* Rounded corners */
+  padding: 8px; /* Padding */
+  resize: none; /* Disable resizing */
+}
+
+/* Input styles */
+.input {
+  border: 1px solid #ccc; /* Match the border style */
+  border-radius: 4px; /* Rounded corners */
+  padding: 8px; /* Padding */
+}

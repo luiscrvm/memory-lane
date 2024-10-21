@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Bold, Italic, List, Undo, Redo, Copy, Check, Plus, Edit, Trash, Save, Settings, X, Linkedin } from "lucide-react"
+import { Bold, Italic, List, Undo, Redo, Copy, Check, Plus, Edit, Trash, Save, Settings, X, Linkedin, FileText } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -303,6 +303,10 @@ export function NoteTakingAppComponent() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("0")
   const [selectedTemplateContent, setSelectedTemplateContent] = useState(DEFAULT_TEMPLATE)
   const [noteTitle, setNoteTitle] = useState("")
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
+  const [isEditNoteDialogOpen, setIsEditNoteDialogOpen] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isConfirmCloseDialogOpen, setIsConfirmCloseDialogOpen] = useState(false)
 
   const generateSummary = () => {
     setIsGenerating(true)
@@ -438,14 +442,10 @@ export function NoteTakingAppComponent() {
 
   const handleSaveEditedNote = () => {
     if (editingNote) {
-      const updatedNotes = savedNotes.map(savedNote => 
-        savedNote.id === editingNote.id 
-          ? { ...savedNote, title: noteTitle.trim() || savedNote.title, content: note }
-          : savedNote
-      )
-      setSavedNotes(updatedNotes)
-      setEditingNote(null)
-      setNoteTitle("")
+      setSavedNotes(savedNotes.map(note => 
+        note.id === editingNote.id ? { ...editingNote, title: noteTitle } : note
+      ))
+      setIsEditNoteDialogOpen(false)
       toast({
         title: "Note updated",
         description: "Your note has been updated successfully.",
@@ -600,10 +600,57 @@ export function NoteTakingAppComponent() {
   const handleNoteClick = (noteId: number) => {
     const clickedNote = savedNotes.find((note) => note.id === noteId)
     if (clickedNote) {
-      setNote(clickedNote.content)
+      setEditingNote({ ...clickedNote })
       setNoteTitle(clickedNote.title)
-      setEditingNote(clickedNote)
-      window.scrollTo(0, 0)
+      setIsEditNoteDialogOpen(true)
+      setHasUnsavedChanges(false)
+    }
+  }
+
+  const handleClearClick = () => {
+    setIsClearDialogOpen(true)
+  }
+
+  const handleClearConfirm = () => {
+    setNote("")
+    setIsClearDialogOpen(false)
+    toast({
+      title: "Input cleared",
+      description: "Your input has been cleared successfully.",
+    })
+  }
+
+  const handleClearCancel = () => {
+    setIsClearDialogOpen(false)
+  }
+
+  const handleCloseEditNoteDialog = () => {
+    if (hasUnsavedChanges) {
+      setIsConfirmCloseDialogOpen(true)
+    } else {
+      setIsEditNoteDialogOpen(false)
+      setEditingNote(null)
+    }
+  }
+
+  const handleEditNoteChange = (field: 'title' | 'content', value: string) => {
+    if (editingNote) {
+      setEditingNote({ ...editingNote, [field]: value })
+      setHasUnsavedChanges(true)
+    }
+  }
+
+  const handleCopyContent = () => {
+    if (editingNote) {
+      const contentToCopy = `${editingNote.title}\n\n${editingNote.content}`;
+      navigator.clipboard.writeText(contentToCopy).then(() => {
+        toast({
+          title: "Content copied!",
+          description: "The note content has been copied to your clipboard.",
+        });
+      }).catch(err => {
+        console.error("Failed to copy: ", err);
+      });
     }
   }
 
@@ -633,7 +680,10 @@ export function NoteTakingAppComponent() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
-          <div className="flex flex-col items-end space-y-2">
+          <div className="flex justify-between items-center">
+            <Button onClick={handleClearClick} variant="outline" size="sm">
+              Clear
+            </Button>
             <div className="flex items-center space-x-2">
               <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
                 <SelectTrigger className="w-[200px]">
@@ -651,10 +701,10 @@ export function NoteTakingAppComponent() {
                 {isStreaming ? "Summarizing..." : "Summarize"}
               </Button>
             </div>
-            <p className="text-sm text-gray-600 italic">
-              *Not private when using external services, as meeting notes are transmitted to these services for summarization.
-            </p>
           </div>
+          <p className="text-sm text-gray-600 italic">
+            *Not private when using external services, as meeting notes are transmitted to these services for summarization.
+          </p>
         </div>
 
         {/* Swiper Carousel */}
@@ -1026,6 +1076,87 @@ export function NoteTakingAppComponent() {
       </Dialog>
 
       <InstructionsPopup isOpen={isInstructionsOpen} onClose={() => setIsInstructionsOpen(false)} />
+
+      <AlertDialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to clear the input?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. All content in the input field will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleClearCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearConfirm}>Clear</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Note Dialog */}
+      <Dialog open={isEditNoteDialogOpen} onOpenChange={handleCloseEditNoteDialog}>
+        <DialogContent className="sm:max-w-[700px] sm:h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Edit Note</DialogTitle>
+            <DialogDescription>
+              Make changes to your note here. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-grow overflow-auto">
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <Input
+                  value={editingNote?.title || ""}
+                  onChange={(e) => handleEditNoteChange('title', e.target.value)}
+                  placeholder="Note Title"
+                  className="text-lg font-bold border border-gray-300 rounded-md flex-grow"
+                />
+                <Button 
+                  onClick={handleCopyContent} 
+                  className="flex items-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-white text-black hover:bg-gray-100 hover:text-black h-8 rounded-md px-3 text-xs ml-2" // Added margin-left for spacing
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Copy</span>
+                </Button>
+              </div>
+              <AutoResizeTextarea
+                value={editingNote?.content || ""}
+                onChange={(e) => handleEditNoteChange('content', e.target.value)}
+                placeholder="Note Content"
+                className="min-h-[300px] resize-none border border-gray-300 rounded-md"
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={handleCloseEditNoteDialog}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEditedNote} disabled={!hasUnsavedChanges}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Close Dialog */}
+      <AlertDialog open={isConfirmCloseDialogOpen} onOpenChange={setIsConfirmCloseDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to close without saving?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelClose}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setIsConfirmCloseDialogOpen(false)
+              setIsEditNoteDialogOpen(false)
+              setEditingNote(null) // Disregard changes
+            }}>Close without saving</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
+
