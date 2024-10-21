@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -67,24 +67,24 @@ const DEFAULT_PROMPT = `You are a helpful assistant. Generate a meeting minute s
 
 const DEFAULT_TEMPLATE = `Meeting Minutes Summary [ENTER TITLE]
 
-• Date: [Enter Date]
+• Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 • Attendees:
-  • [Name 1]
-  • [Name 2]
-  • [Name 3]
+  - [Name 1]
+  - [Name 2]
+  - [Name 3]
 • Agenda:
-  1. [Agenda Item 1]
-  2. [Agenda Item 2]
-  3. [Agenda Item 3]
+  - [Agenda Item 1]
+  - [Agenda Item 2]
+  - [Agenda Item 3]
 • Discussion Points:
-  • [Key Point 1]
-  • [Key Point 2]
-  • [Key Point 3]
+  - [Key Point 1]
+  - [Key Point 2]
+  - [Key Point 3]
 • Action Items:
-  • [Action Item 1] - [Responsible Person] - [Due Date]
-  • [Action Item 2] - [Responsible Person] - [Due Date]
-• Next Meeting:
-  • [Date and Time]
+  - [Action Item 1] - [Responsible Person] - [Due Date]
+  - [Action Item 2] - [Responsible Person] - [Due Date]
+• Next Meeting: // None if no next meeting on note
+  - [Date and Time]
 • Summary of Meeting:
 `
 
@@ -213,6 +213,55 @@ interface AIService {
   name: string;
   apiKey: string;
 }
+
+// New AutoResizeTextarea component
+const AutoResizeTextarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(({ onChange, ...props }, ref) => {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+    }
+  }, [props.value])
+
+  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (onChange) {
+      onChange(event)
+    }
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+    }
+  }
+
+  return (
+    <Textarea
+      {...props}
+      ref={(node) => {
+        textareaRef.current = node
+        if (typeof ref === 'function') {
+          ref(node)
+        } else if (ref) {
+          ref.current = node
+        }
+      }}
+      onChange={handleChange}
+      style={{
+        minHeight: '200px',
+        maxHeight: '500px',
+        overflow: 'auto',
+        resize: 'none',
+        transition: 'height 0.2s ease-in-out',
+      }}
+    />
+  )
+})
+
+AutoResizeTextarea.displayName = 'AutoResizeTextarea'
 
 export function NoteTakingAppComponent() {
   const [note, setNote] = useState("")
@@ -461,6 +510,8 @@ export function NoteTakingAppComponent() {
   }
 
   const handleSummarize = async () => {
+    console.log("Summarize button clicked. Note content:", note); // Debug log
+
     if (!note) {
       toast({
         title: "Error",
@@ -484,14 +535,18 @@ export function NoteTakingAppComponent() {
       })
 
       const combinedPrompt = `${llmPrompt}\n\nUse the following template for the summary:\n\n${selectedTemplateContent}\n\nInput text:\n${note}`
+      console.log("Combined prompt:", combinedPrompt); // Debug log
+
       const prompt = PromptTemplate.fromTemplate(combinedPrompt)
 
       const chain = prompt.pipe(model)
 
+      console.log("Sending request to LLM..."); // Debug log
       const stream = await chain.stream({
-        text: note,
+        text: note, // Ensure we're passing the note content here
       })
 
+      console.log("Received stream from LLM"); // Debug log
       for await (const chunk of stream) {
         setSummary((prev) => prev + chunk)
       }
@@ -549,9 +604,9 @@ export function NoteTakingAppComponent() {
           <span className="bg-yellow-200 px-1">PRIVATE</span>. MEETING NOTES
         </h1>
         <div className="space-y-6">
-          <Textarea
+          <AutoResizeTextarea
             placeholder="Type your note here..."
-            className="min-h-[200px] w-full resize-none rounded-none border-x-0 border-t-0 border-b border-gray-300 p-2 focus:border-gray-400 focus:outline-none focus:ring-0"
+            className="w-full rounded-none border-x-0 border-t-0 border-b border-gray-300 p-2 focus:border-gray-400 focus:outline-none focus:ring-0"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
