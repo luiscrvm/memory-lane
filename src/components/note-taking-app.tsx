@@ -30,6 +30,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { FreeMode, Navigation } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/free-mode';
+import 'swiper/css/navigation';
 
 function Clock() {
   const [time, setTime] = useState(new Date())
@@ -297,6 +302,7 @@ export function NoteTakingAppComponent() {
   const [llmTemperature, setLlmTemperature] = useState(0.7)
   const [selectedTemplateId, setSelectedTemplateId] = useState("0")
   const [selectedTemplateContent, setSelectedTemplateContent] = useState(DEFAULT_TEMPLATE)
+  const [noteTitle, setNoteTitle] = useState("")
 
   const generateSummary = () => {
     setIsGenerating(true)
@@ -341,12 +347,14 @@ export function NoteTakingAppComponent() {
   const handleSave = () => {
     const newNote: SavedNote = {
       id: Date.now(),
-      title: `Note ${savedNotes.length + 1}`,
+      title: noteTitle.trim() || `Note ${savedNotes.length + 1}`,
       content: summary,
       createdAt: new Date().toISOString(),
     }
     setSavedNotes([...savedNotes, newNote])
     setIsModalOpen(false)
+    setNoteTitle("") // Reset the title input
+    setSummary("") // Reset the summary
     toast({
       title: "Summary saved",
       description: "Your summary has been saved successfully.",
@@ -430,10 +438,14 @@ export function NoteTakingAppComponent() {
 
   const handleSaveEditedNote = () => {
     if (editingNote) {
-      setSavedNotes(savedNotes.map(note => 
-        note.id === editingNote.id ? editingNote : note
-      ))
+      const updatedNotes = savedNotes.map(savedNote => 
+        savedNote.id === editingNote.id 
+          ? { ...savedNote, title: noteTitle.trim() || savedNote.title, content: note }
+          : savedNote
+      )
+      setSavedNotes(updatedNotes)
       setEditingNote(null)
+      setNoteTitle("")
       toast({
         title: "Note updated",
         description: "Your note has been updated successfully.",
@@ -524,6 +536,7 @@ export function NoteTakingAppComponent() {
     setIsStreaming(true)
     setIsModalOpen(true)
     setSummary("")
+    setNoteTitle("") // Reset the title when generating a new summary
 
     try {
       const model = new Ollama({
@@ -584,6 +597,16 @@ export function NoteTakingAppComponent() {
     }
   }
 
+  const handleNoteClick = (noteId: number) => {
+    const clickedNote = savedNotes.find((note) => note.id === noteId)
+    if (clickedNote) {
+      setNote(clickedNote.content)
+      setNoteTitle(clickedNote.title)
+      setEditingNote(clickedNote)
+      window.scrollTo(0, 0)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
@@ -633,6 +656,31 @@ export function NoteTakingAppComponent() {
             </p>
           </div>
         </div>
+
+        {/* Swiper Carousel */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Saved Notes</h2>
+          <Swiper
+            slidesPerView="auto"
+            spaceBetween={20}
+            freeMode={true}
+            navigation={true}
+            modules={[FreeMode, Navigation]}
+            className="mySwiper"
+          >
+            {savedNotes.map((note) => (
+              <SwiperSlide key={note.id} className="!w-64">
+                <div 
+                  className="bg-white p-4 rounded-lg shadow-md cursor-pointer h-40 overflow-hidden"
+                  onClick={() => handleNoteClick(note.id)}
+                >
+                  <h3 className="font-bold mb-2 truncate">{note.title}</h3>
+                  <p className="text-sm text-gray-600 line-clamp-4">{note.content}</p>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
       </main>
 
       <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
@@ -643,7 +691,18 @@ export function NoteTakingAppComponent() {
               {isStreaming ? "Generating summary..." : "Here's a concise summary of your meeting notes. You can edit it below."}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="note-title" className="text-sm font-medium">
+                Title (optional)
+              </label>
+              <Input
+                id="note-title"
+                value={noteTitle}
+                onChange={(e) => setNoteTitle(e.target.value)}
+                placeholder="Enter a title for your note"
+              />
+            </div>
             <div className="flex justify-end">
               <Button
                 onClick={handleCopy}

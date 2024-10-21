@@ -6,6 +6,15 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.swiper-button-next,
+.swiper-button-prev {
+  color: #000 !important; /* Set the color to black and use !important to ensure it overrides any default styles */
+}
+
+.swiper-slide {
+  width: auto;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
