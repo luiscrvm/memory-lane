@@ -72,25 +72,34 @@ const DEFAULT_PROMPT = `You are a helpful assistant. Generate a meeting minute s
 
 const DEFAULT_TEMPLATE = `Meeting Minutes Summary [ENTER TITLE]
 
-• Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-• Attendees:
-  - [Name 1]
-  - [Name 2]
-  - [Name 3]
-• Agenda:
-  - [Agenda Item 1]
-  - [Agenda Item 2]
-  - [Agenda Item 3]
-• Discussion Points:
-  - [Key Point 1]
-  - [Key Point 2]
-  - [Key Point 3]
-• Action Items:
-  - [Action Item 1] - [Responsible Person] - [Due Date]
-  - [Action Item 2] - [Responsible Person] - [Due Date]
-• Next Meeting: // None if no next meeting on note
-  - [Date and Time]
-• Summary of Meeting:
+Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+
+Attendees:
+
+[Name 1]
+[Name 2]
+[Name 3]
+
+Agenda:
+[Agenda Item 1]
+[Agenda Item 2]
+[Agenda Item 3]
+
+Discussion Points:
+
+[Key Point 1]
+[Key Point 2]
+[Key Point 3]
+
+Action Items:
+
+[Action Item 1] - [Responsible Person] - [Due Date]
+[Action Item 2] - [Responsible Person] - [Due Date]
+
+Next Meeting: // None if no next meeting on note
+[Date and Time]
+
+Summary of Meeting:
 `
 
 function Header({ 
@@ -440,12 +449,36 @@ export function NoteTakingAppComponent() {
     setEditingNote(note)
   }
 
-  const handleSaveEditedNote = () => {
+  const handleSaveEditedNote = async () => {
     if (editingNote) {
-      setSavedNotes(savedNotes.map(note => 
-        note.id === editingNote.id ? { ...editingNote, title: noteTitle } : note
-      ))
+      const updatedNotes = savedNotes.map(note =>
+        note.id === editingNote.id ? editingNote : note
+      )
+      setSavedNotes(updatedNotes)
+      setHasUnsavedChanges(false)
       setIsEditNoteDialogOpen(false)
+      
+      // Update the note in the database
+      try {
+        const response = await fetch('/api/notes', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editingNote),
+        })
+        if (!response.ok) {
+          throw new Error('Failed to update note')
+        }
+      } catch (error) {
+        console.error('Error updating note:', error)
+        toast({
+          title: "Error",
+          description: "Failed to update note. Please try again.",
+          variant: "destructive",
+        })
+      }
+
       toast({
         title: "Note updated",
         description: "Your note has been updated successfully.",
@@ -635,7 +668,10 @@ export function NoteTakingAppComponent() {
 
   const handleEditNoteChange = (field: 'title' | 'content', value: string) => {
     if (editingNote) {
-      setEditingNote({ ...editingNote, [field]: value })
+      setEditingNote(prevNote => ({
+        ...prevNote,
+        [field]: value
+      }))
       setHasUnsavedChanges(true)
     }
   }
