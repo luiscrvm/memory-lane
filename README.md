@@ -1,78 +1,87 @@
-# Memory Lane
+Memory Lane
+-----------
 
 Memory Lane is a Next.js project designed to help you preserve and cherish your most precious memories.
 
-## Project Overview
+Project Overview
+----------------
 
-Memory Lane is a web application that allows users to create, store, and revisit their personal memories in a digital format. Whether it's photos, notes, or important dates, Memory Lane provides a seamless and intuitive interface to keep your memories organized and easily accessible.
+Memory Lane is a web application that allows users to create, store, and revisit their personal memories in a digital format. Currently, it serves as a Minimum Viable Product (MVP) with in-memory storage, but future implementations will include local storage and vector database integration for more advanced RAG-style interactions.
 
-## Features
+Features
+--------
 
-- **Digital Memory Storage**: Safely store your memories in the cloud
-- **Intuitive User Interface**: Easy-to-use design for effortless navigation
-- **Customizable Memory Cards**: Add photos, notes, and dates to your memories
-- **Search and Filter**: Quickly find specific memories
-- **Responsive Design**: Access your memories on any device
+-   Digital Memory Storage: Currently stores memories in-memory (temporary storage)
+-   Minimalist User Interface: Clean, simple design for effortless navigation
+-   Customizable Memory Cards: Add photos, notes, and dates to your memories
+-   Responsive Design: Access your memories on any device
 
-## Getting Started
+Upcoming Features
+-----------------
 
-To get Memory Lane running on your local machine, follow these steps:
+-   Local storage implementation for persistent memory storage
+-   Vector database integration for advanced memory retrieval and interactions
+-   Search and filter functionality to quickly find specific memories
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/LuisVMCR/memory-lane.git
-   cd memory-lane
-   ```
+Getting Started
+---------------
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+To run Memory Lane on your local machine:
 
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
+1.  Clone the repository:
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+    bash
 
-## Technology Stack
+    `git clone https://github.com/LuisVMCR/memory-lane.git cd memory-lane `
 
-Memory Lane is built using the following technologies:
+2.  Install dependencies:
 
-- **Next.js**: React framework for production-grade applications
-- **React**: JavaScript library for building user interfaces
-- **Vercel**: Platform for deploying and hosting web applications
-- **Geist Font**: Custom font family for enhanced typography
+    bash
 
-## Contributing
+    `npm  install  `
+
+3.  Run the development server:
+
+    bash
+
+    `npm run dev `
+
+4.  Open [http://localhost:3000](http://localhost:3000/) in your browser to see the application.
+
+Technology Stack
+----------------
+
+-   Next.js: React framework for production-grade applications
+-   React: JavaScript library for building user interfaces
+-   Vercel: Platform for deploying and hosting web applications
+-   Geist Font: Custom font family for enhanced typography
+
+Current Limitations
+-------------------
+
+-   Memories are only stored in-memory and are lost upon page refresh
+-   Search and filter features are not yet implemented
+-   User interface is basic and requires significant improvements
+
+Contributing
+------------
 
 We welcome contributions to Memory Lane! If you have suggestions for improvements or encounter any issues, please feel free to open an issue or submit a pull request.
 
-## Learn More
+Learn More
+----------
 
 To dive deeper into the technologies used in this project, check out the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs): Learn about Next.js features and API
-- [Learn Next.js](https://nextjs.org/learn): An interactive Next.js tutorial
+-   [Next.js Documentation](https://nextjs.org/docs): Learn about Next.js features and API
+-   [Learn Next.js](https://nextjs.org/learn): An interactive Next.js tutorial
 
-## License
+License
+-------
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is open source and available under the [MIT License](https://www.perplexity.ai/search/LICENSE).
 
-## Acknowledgments
+Acknowledgments
+---------------
 
-Special thanks to the Next.js team and the open-source community for their invaluable tools and resources that made this project possible.
-
----
-
-Created with ❤️ by [Luis V. MCR](https://github.com/LuisVMCR)
-
-Citations:
-[1] https://github.com/LuisVMCR/memory-lane
-[2] https://github.com/othneildrew/Best-README-Template
-[3] https://everhour.com/blog/github-readme-template/
-[4] https://www.dhiwise.com/post/how-to-write-a-readme-that-stands-out-in-best-practices
-[5] https://dev.to/mfts/how-to-write-a-perfect-readme-for-your-github-project-59f2
-[6] https://github.com/jehna/readme-best-practices
-[7] https://github.com/LuisVMCR/memory-lane
+Special thanks to the Next.js team and the open-source community for their invaluable tools and resources that made this project possible. Created with ❤️ by [Luis V. MCR](https://github.com/LuisVMCR)
