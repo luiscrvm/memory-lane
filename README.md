@@ -76,8 +76,3 @@ License
 -------
 
 This project is open source and available under the [MIT License](https://www.perplexity.ai/search/LICENSE).
-
-Acknowledgments
----------------
-
-Special thanks to the Next.js team and the open-source community for their invaluable tools and resources that made this project possible.
