@@ -1,12 +1,12 @@
 Memory Lane
 -----------
 
-Memory Lane is a Next.js project designed to help you preserve and cherish your most precious memories.
+Memory Lane is a Next.js project designed to help you summarize notes with the help of AI. 
 
 Project Overview
 ----------------
 
-Memory Lane is a web application that allows users to create, store, and revisit their personal memories in a digital format. Currently, it serves as a Minimum Viable Product (MVP) with in-memory storage, but future implementations will include local storage and vector database integration for more advanced RAG-style interactions.
+Memory Lane is a web application that allows users to create, store, and revisit their personal notes in a digital format. Currently, it serves as a Minimum Viable Product (MVP) with in-memory storage, but future implementations will include local storage and vector database integration for more advanced RAG-style interactions.
 
 Features
 --------
@@ -32,7 +32,7 @@ To run Memory Lane on your local machine:
 
     bash
 
-    `git clone https://github.com/LuisVMCR/memory-lane.git cd memory-lane `
+    `git clone https://github.com/luiscrvm/memory-lane.git cd memory-lane `
 
 2.  Install dependencies:
 
@@ -63,12 +63,8 @@ Current Limitations
 -   Search and filter features are not yet implemented
 -   User interface is basic and requires significant improvements
 
-Contributing
-------------
 
-We welcome contributions to Memory Lane! If you have suggestions for improvements or encounter any issues, please feel free to open an issue or submit a pull request.
-
-Learn More
+Learn More (for less technical people - like me :))
 ----------
 
 To dive deeper into the technologies used in this project, check out the following resources:
@@ -84,4 +80,4 @@ This project is open source and available under the [MIT License](https://www.p
 Acknowledgments
 ---------------
 
-Special thanks to the Next.js team and the open-source community for their invaluable tools and resources that made this project possible. Created with ❤️ by [Luis V. MCR](https://github.com/LuisVMCR)
+Special thanks to the Next.js team and the open-source community for their invaluable tools and resources that made this project possible. Created with ❤️ by [Luis V. MCR](https://github.com/luiscrvm)
