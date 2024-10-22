@@ -80,4 +80,4 @@ This project is open source and available under the [MIT License](https://www.p
 Acknowledgments
 ---------------
 
-Special thanks to the Next.js team and the open-source community for their invaluable tools and resources that made this project possible. Created with ❤️ by [Luis V. MCR](https://github.com/luiscrvm)
+Special thanks to the Next.js team and the open-source community for their invaluable tools and resources that made this project possible.
